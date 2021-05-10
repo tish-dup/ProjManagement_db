@@ -8,24 +8,24 @@ class Person implements Serializable {
     /**
      * Attributes
      */
-    String type;
+    int id;
     String name;
-    String contactNo;
+    String telNum;
     String email;
     String address;
 
     /**
      * 
-     * @param type
+     * @param id
      * @param name
-     * @param contactNo
+     * @param telNum
      * @param email
      * @param address
      */
-    public Person(String type, String name, String contactNo, String email, String address) {
-        this.type = type;
+    public Person(int id, String name, String telNum, String email, String address) {
+        this.id = id;
         this.name = name;
-        this.contactNo = contactNo;
+        this.telNum = telNum;
         this.email = email;
         this.address = address;
     }
@@ -35,9 +35,9 @@ class Person implements Serializable {
      */
 
     public String toString() {
-        String output = "\nName: " + name;
-        output += "\nType: " + type;
-        output += "\nContact Details: " + contactNo;
+        String output = "\nID: " + id;
+        output += "\nName: " + name;
+        output += "\nContact Details: " + telNum;
         output += "\nEmail address: " + email;
         output += "\nResidentail Address: " + address;
 
@@ -45,13 +45,13 @@ class Person implements Serializable {
     }
 
     /**
-     * @param contactNo
+     * @param telNum
      * @param email
-     * @param address   The contact details for either the client, contractor or
-     *                  architect for the project is updated
+     * @param address The contact details for either the client, contractor or
+     *                architect for the project is updated
      */
-    public void updateDetails(String contactNo, String email, String address) {
-        this.contactNo = contactNo;
+    public void updateDetails(String telNum, String email, String address) {
+        this.telNum = telNum;
         this.email = email;
         this.address = address;
     }

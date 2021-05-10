@@ -1,0 +1,21 @@
+{
+    "sqltools.connections": [
+        {
+            "mysqlOptions": {
+                "authProtocol": "default"
+            },
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 3306,
+            "driver": "MySQL",
+            "name": "localhost",
+            "database": "PoisePMS",
+            "username": "tish",
+            "password": "MySQL@Gemini074"
+        }
+    ],
+    "java.project.referencedLibraries": [
+        "lib/**/*.jar",
+        "c:\\Users\\tishv\\Dropbox\\Laetitia Du plessis-85304\\Data Science, Algorithms and Advanced Software Engineering\\Task 7\\JavaConnection\\JavaConnection\\lib\\mysql-connector-java-8.0.23.jar"
+    ]
+}

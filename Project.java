@@ -20,11 +20,17 @@ class Project implements Serializable {
     int amountPaid;
     int amountOut;
     Date deadline;
-    Person contractor;
-    Person architect;
-    Person client;
-    Date completionDate;
     boolean isFinalised;
+    Date completionDate;
+    int structEngPersonID;
+    int archPersonID;
+    int custPersonID;
+    int projMangPersonID;
+
+    Person structEngPerson;
+    Person archPerson;
+    Person custPerson;
+    Person projMangPerson;
 
     /**
      * 
@@ -36,12 +42,14 @@ class Project implements Serializable {
      * @param totalFee
      * @param amountPaid
      * @param deadline
-     * @param contractor
-     * @param architect
-     * @param client
+     * @param structEngPerson
+     * @param archPerson
+     * @param custPerson
+     * @param projMangPerson
      */
     public Project(int projNum, String projName, String buildingType, String address, String erfNum, int totalFee,
-            int amountPaid, Date deadline, Person contractor, Person architect, Person client) {
+            int amountPaid, Date deadline, boolean isFinalised, Date completionDate, Person structEngPerson,
+            Person archPerson, Person custPerson, Person projMangPerson) {
 
         this.projNum = projNum;
         this.projName = projName;
@@ -51,13 +59,22 @@ class Project implements Serializable {
         this.totalFee = totalFee;
         this.amountPaid = amountPaid;
         this.deadline = deadline;
-        this.contractor = contractor;
-        this.architect = architect;
-        this.client = client;
+        this.isFinalised = isFinalised;
+        this.completionDate = completionDate;
+        this.structEngPersonID = structEngPerson.id;
+        this.archPersonID = archPerson.id;
+        this.custPersonID = custPerson.id;
+        this.projMangPersonID = projMangPerson.id;
+        this.structEngPerson = structEngPerson;
+        this.archPerson = archPerson;
+        this.custPerson = custPerson;
+        this.projMangPerson = projMangPerson;
     }
 
     /**
-     * @return String // Gives the class Project an output.
+     * To give the class Project an output.
+     * 
+     * @return String
      */
     public String toString() {
         DateFormat dateformat = new SimpleDateFormat("dd/MM/yyyy");
@@ -91,16 +108,19 @@ class Project implements Serializable {
 
         output += "\nFinalised (yes/no): " + isFinalisedString;
 
-        // Details of the contractor, architect and client
-        output += "\nContractor: " + contractor;
-        output += "\nArchitect: " + architect;
-        output += "\nClient: " + client;
+        // Details of the Structural Engineer, architect and client and Project Manager
+        output += "\nStructural Engineer: " + structEngPerson;
+        output += "\nArchitect: " + archPerson;
+        output += "\nClient: " + custPerson;
+        output += "\nProject Manager: " + projMangPerson;
 
         return output;
     }
 
     /**
-     * @param newDeadline // Method to add a new due date to the project
+     * Method to add a new due date to the project
+     * 
+     * @param newDeadline
      */
 
     public void changeDeadline(Date newDeadline) {
@@ -108,7 +128,10 @@ class Project implements Serializable {
     }
 
     /**
-     * @param newAmmount // Method to add the new amount paid by the client
+     * Method to add the new amount paid by the client
+     * 
+     * @param newAmmount
+     *
      */
 
     public void addAmount(int newAmmount) {
@@ -116,10 +139,12 @@ class Project implements Serializable {
     }
 
     /**
+     * To complete a project, the completion date is assigned to the project, the
+     * finalisation status is changed to true, and the oustanding amount is
+     * calculated for the invoice
+     * 
      * @param completionDate
-     * @return Invoice // To complete a project, the completion date is assigned to
-     *         the project, the finalisation status is changed to true, and the
-     *         oustanding amount is calculated for the invoice
+     * @return Invoice
      */
     public Invoice finalise(Date completionDate) {
         this.completionDate = completionDate;
@@ -127,7 +152,7 @@ class Project implements Serializable {
         this.amountOut = totalFee - amountPaid;
 
         if (amountOut > 0) {
-            return new Invoice(projNum, projName, client, amountOut, completionDate);
+            return new Invoice(projNum, projName, custPerson, amountOut, completionDate);
         } else {
             return null;
         }

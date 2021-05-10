@@ -1,7 +1,9 @@
 import java.util.Scanner;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Optional;
 import java.io.FileWriter;
+import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -22,12 +24,20 @@ public class Main {
     /**
      * Create instance of Project repository
      */
-    static ProjectRepository projRepo = new ProjectRepository();
+    static ProjectRepository projRepo;
+    static PersonRepo personRepo;
 
     /**
+     * Create instance of Project repository
+     */
+
+    static ProjectManagement projMang;
+
+    /**
+     * Method to display a menu from which the user can selects
+     * 
      * @return String
-     * @throws ParseException // Method to display a menu from which the user can
-     *                        selects
+     * @throws ParseException
      */
 
     public static String menuSelection() throws ParseException {
@@ -40,62 +50,62 @@ public class Main {
                 5\t-\tFinalise a project
                 6\t-\tView list of uncompleted projects
                 7\t-\tView list of overdue Projects
-                8\t-\tExit
+                0\t-\tExit
                 """);
 
         // User's selection determine which method should be called
         int userSelection = getUserInt("Please make your selection: ");
 
         switch (userSelection) {
-        // If user's selection is '1', then user can create a new project
-        case 1:
-            createProject();
-            break;
+            // If user's selection is '1', then user can create a new project
+            case 1:
+                createProject();
+                break;
 
-        // If user's selection is '2', then user can amend the due date of the project
-        case 2:
-            newDeadline();
-            break;
+            // If user's selection is '2', then user can amend the due date of the project
+            case 2:
+                newDeadline();
+                break;
 
-        // If user selects '3', then user can change the payment on the project
-        case 3:
-            makePayment();
-            break;
+            // If user selects '3', then user can change the payment on the project
+            case 3:
+                makePayment();
+                break;
 
-        // If user selects '4', then user can update the details of either the
-        // contractor, client or architect.
-        case 4:
-            updatePersonDetails();
-            break;
+            // If user selects '4', then user can update the details of either the
+            // contractor, client or architect.
+            case 4:
+                updatePersonDetails();
+                break;
 
-        // If user selects '5', then user can finalise the project
-        case 5:
-            finalisation();
-            break;
+            // If user selects '5', then user can finalise the project
+            case 5:
+                finalisation();
+                break;
 
-        // User can view list of uncompleted projects by entering '6'
-        case 6:
-            ArrayList<Project> incomplete = projRepo.uncompletedProj();
-            for (Project proj : incomplete) {
-                System.out.println(proj.toString() + "\n");
-            }
-            break;
+            // User can view list of uncompleted projects by entering '6'
+            case 6:
+                ArrayList<Project> incomplete = projRepo.uncompletedProj();
+                for (Project proj : incomplete) {
+                    System.out.println(proj.toString() + "\n");
+                }
+                break;
 
-        // User can view list of overdue projects by entering '7'
-        case 7:
-            ArrayList<Project> overdue = projRepo.overdueProj();
-            for (Project proj : overdue) {
-                System.out.println(proj.toString() + "\n");
-            }
-            break;
+            // User can view list of overdue projects by entering '7'
+            case 7:
+                ArrayList<Project> overdue = projRepo.overdueProj();
+                for (Project proj : overdue) {
+                    System.out.println(proj.toString() + "\n");
+                }
+                break;
 
-        // User can exit program by entering '8'
-        case 8:
-            exitProgram();
-            break;
+            // User can exit program by entering '8'
+            case 0:
+                exitProgram();
+                break;
 
-        default:
-            System.out.println("Incorrect selection. Please enter a valid option");
+            default:
+                System.out.println("Incorrect selection. Please enter a valid option");
         }
 
         return menuSelection();
@@ -131,63 +141,77 @@ public class Main {
     }
 
     /**
-     * @throws ParseException // Method to create a project by requesting for user's
-     *                        input for each instance in the Project class. If the
-     *                        user did not enter a name for the project, then the
-     *                        program will concatenate the building type and the
-     *                        client's surname as the new project name.
+     * Method to create a project by requesting for user's input for each instance
+     * in the Project class. If the user did not enter a name for the project, then
+     * the program will concatenate the building type and the client's surname as
+     * the new project name.
+     * 
+     * @throws Exception
      */
 
-    public static void createProject() throws ParseException {
+    public static void createProject() {
+        try {
+            int projNum = getUserInt("Please enter the project number: ");
+            String projName = getUserString("Please enter the project name: ");
+            String buildingType = getUserString("Please enter the type of building: ");
+            String address = getUserString("Please enter the physical address for the project: ");
+            String erfNum = getUserString("Please enter the ERF number: ");
+            int totalFee = getUserInt("Please enter the total fee for the project: ");
+            int amountPaid = getUserInt("Please enter the total amount paid to date: ");
+            String sdeadline = getUserString("Please enter the deadline for the project (dd/MM/yyyy): ");
+            Date deadline = dateformat.parse(sdeadline);
 
-        int projNum = getUserInt("Please enter the project number: ");
-        String projName = getUserString("Please enter the project name: ");
-        String buildingType = getUserString("Please enter the type of building: ");
-        String address = getUserString("Please enter the physical address for the project: ");
-        String erfNum = getUserString("Please enter the ERF number: ");
-        int totalFee = getUserInt("Please enter the total fee for the project: ");
-        int amountPaid = getUserInt("Please enter the total amount paid to date: ");
-        String sdeadline = getUserString("Please enter the deadline for the project (dd/MM/yyyy): ");
-        Date deadline = dateformat.parse(sdeadline);
+            Person structEngPerson = createPerson("Structural Engineer");
+            Person archPerson = createPerson("Architect");
+            Person custPerson = createPerson("Customer");
+            Person projMangPerson = createPerson("Project Manager");
 
-        Person architect = createPerson("architect", input);
-        Person contractor = createPerson("contractor", input);
-        Person client = createPerson("client", input);
-
-        // If the user did not enter a name for the project, then the program will
-        // concatenate the building type and the client's surname as the new project
-        // name.
-        if (projName == "") {
-            String[] clientname = client.name.split(" ");
-            String lastname = clientname[clientname.length - 1];
-            projName = buildingType + " " + lastname;
+            projMang.addNewProj(projNum, projName, buildingType, address, erfNum, totalFee, amountPaid, deadline, false,
+                    null, structEngPerson, archPerson, custPerson, projMangPerson);
+        } catch (ParseException pe) {
+            System.out.println("Incorrect date format. Please try again");
+            createProject();
+            return;
+        } catch (Exception ex) {
+            System.err.println(ex.getMessage());
+            createProject();
+            return;
         }
 
-        projRepo.create(projNum, projName, buildingType, address, erfNum, totalFee, amountPaid, deadline, contractor,
-                architect, client);
     }
 
     /**
+     * Method lets the user add the details of each person who works on the project.
+     * 
      * @param type
      * @param input
-     * @return Person // Method lets the user add the details of each person who
-     *         works on the project.
+     * @return Person
+     * @throws Exception
      */
 
-    static Person createPerson(String type, Scanner input) {
-        System.out.println("\nPlease enter the details of the " + type + ": ");
+    static Person createPerson(String personType) {
+        System.out.println("\nPlease enter the details for " + personType + ": ");
+        int id = getUserInt("\nID: ");
         String name = getUserString("\nName: ");
-        String contactNo = getUserString("\nContact number: ");
+        String telNum = getUserString("\nContact number: ");
         String email = getUserString("\nEmail address : ");
         String address = getUserString("\nAddress: ");
 
-        return new Person(type, name, contactNo, email, address);
+        try {
+            Person createdPerson = projMang.addNewPerson(id, name, telNum, email, address);
+            return createdPerson;
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            return createPerson(personType);
+        }
+
     }
 
     /**
-     * @return Project // Method to get the project that the user wishes to work on.
-     *         If there is no project in the program an appropriate message will
-     *         appear.
+     * Method to get the project that the user wishes to work on. If there is no
+     * project in the program an appropriate message will appear.
+     * 
+     * @return Project
      */
 
     public static Project getProject() {
@@ -211,13 +235,12 @@ public class Main {
     public static void newDeadline() throws ParseException {
         // Get the project number the user wishes to work on
         Project proj = getProject();
+        int projNum = proj.projNum;
 
-        System.out.print("Please enter the new deadline for the project (dd/MM/yyyy): ");
-        String snewDeadline = input.nextLine();
+        String snewDeadline = getUserString("Please enter the new deadline for the project (dd/MM/yyyy): ");
         try {
             Date newDeadline = dateformat.parse(snewDeadline);
-            proj.changeDeadline(newDeadline);
-            projRepo.update(proj);
+            projMang.changeDeadline(projNum, newDeadline);
 
         } catch (ParseException ex) {
             System.out.println("Date is not valid. Please try again.");
@@ -238,10 +261,10 @@ public class Main {
     public static void makePayment() {
         // Get the project number the user wishes to work on
         Project proj = getProject();
-        int newAmmount = getUserInt("Add client's next payment: ");
-        proj.addAmount(newAmmount);
+        int newAmount = getUserInt("Add client's next payment: ");
+
         try {
-            projRepo.update(proj);
+            projMang.updateAmountPaid(proj.projNum, newAmount);
 
         } catch (Exception e) {
             System.out.println(e.getMessage());
@@ -254,25 +277,38 @@ public class Main {
      * user for the new details.
      */
 
+    public static Person getPerson() {
+        try {
+            ArrayList<Person> allPersons = personRepo.getAll();
+            for (Person person : allPersons) {
+                System.out.println(person.id + "\t" + person.name + ": " + person.email);
+            }
+
+            int personID = getUserInt("Please enter the id of the person you wish to select: ");
+            Optional<Person> selectedPerson = allPersons.stream().filter(person -> person.id == personID).findFirst();
+            if (selectedPerson.isEmpty()) {
+                System.out.println("Could not find the id on the database");
+                return getPerson();
+            } else {
+                return selectedPerson.get();
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+            return null;
+        }
+
+    }
+
     public static void updatePersonDetails() {
         // Get the project number the user wishes to work on
-        Project proj = getProject();
-
-        String type = getUserString("Whose details do you want to update (contractor / architect / client): ");
-        String contactNo = getUserString("\nContact number: ");
+        Person person = getPerson();
+        String name = getUserString("\nName: ");
+        String telNum = getUserString("\nContact number: ");
         String email = getUserString("\nEmail address : ");
         String address = getUserString("\nAddress: ");
 
-        if (type == "architect") {
-            proj.architect.updateDetails(contactNo, email, address);
-        } else if (type == "contractor") {
-            proj.contractor.updateDetails(contactNo, email, address);
-        } else if (type == "client") {
-            proj.client.updateDetails(contactNo, email, address);
-        }
-
         try {
-            projRepo.update(proj);
+            projMang.updateDetails(person.id, name, telNum, email, address);
 
         } catch (Exception e) {
             System.out.print(e.getMessage());
@@ -347,20 +383,17 @@ public class Main {
      *                        example project in program or to generate a new
      *                        project to navigate through the program.
      */
-    public static void main(String[] args) throws ParseException {
-        try {
+    public static void main(String[] args) {
 
+        try {
+            projRepo = new ProjectRepository();
+            projMang = new ProjectManagement();
+            personRepo = new PersonRepo();
             projRepo.readFromFile();
-            String selection = getUserString("Would you like to use the example project? (y/n) ");
-            if (selection.equals("y")) {
-                Project example = projRepo.exampleProject();
-                System.out.print(example.toString());
-                menuSelection();
-            } else {
-                menuSelection();
-            }
+            menuSelection();
 
         } catch (Exception ex) {
+            ex.printStackTrace();
             System.out.println(ex.getMessage());
         }
     }

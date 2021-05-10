@@ -1,4 +1,6 @@
+import java.text.DateFormat;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.io.FileInputStream;
@@ -7,6 +9,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.sql.*;
 
 class ProjectRepository implements Serializable {
 
@@ -20,24 +23,23 @@ class ProjectRepository implements Serializable {
      */
     public ArrayList<Project> ProjectList = new ArrayList<Project>();
 
-    /**
-     * @return Project
-     * @throws ParseException An example project is created for the user to use in
-     *                        the program
-     */
+    PersonRepo personRepo;
 
-    public Project exampleProject() throws ParseException {
-        Person willem = new Person("Contractor", "Willem du Plessis", "074 856 4561", "willem@dup.com",
-                "452 Tugela Avenue");
-        Person rene = new Person("Architect", "Rene Malan", "074 856 4561", "rene@malan", "452 Tugela Avenue");
-        Person tish = new Person("Client", "Tish du Plessis", "074 856 4561", "tish@dup.com", "452 Tugela Avenue");
-        Date deadline = Main.dateformat.parse("30/03/2021");
+    DateFormat sqlDateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
-        return create(789, "House Plessis", "House", "123 Jasper Avenue", "1025", 20000, 5000, deadline, willem, rene,
-                tish);
+    // Constructor
+    public ProjectRepository() throws Exception {
+
+        Class.forName("com.mysql.jdbc.Driver");
+        personRepo = new PersonRepo();
+        // Connect to the PoisePMS database, via the jdbc:mysql: channel on localhost
+        // (this PC)
+
     }
 
     /**
+     * Method to create a new project
+     * 
      * @param projNum
      * @param projName
      * @param buildingType
@@ -46,41 +48,89 @@ class ProjectRepository implements Serializable {
      * @param totalFee
      * @param amountPaid
      * @param deadline
-     * @param contractor
-     * @param architect
-     * @param client
-     * @return Project // Method to create a new project
+     * @param isFinalised
+     * @param completionDate
+     * @param archPersonID
+     * @param custPersonID
+     * @param structEngPersonID
+     * @param projMangPersonID
+     * @throws SQLException
      */
 
-    public Project create(int projNum, String projName, String buildingType, String address, String erfNum,
-            int totalFee, int amountPaid, Date deadline, Person contractor, Person architect, Person client) {
-        Project newproj = new Project(projNum, projName, buildingType, address, erfNum, totalFee, amountPaid, deadline,
-                contractor, architect, client);
-        this.ProjectList.add(newproj);
-        return newproj;
+    public void create(Project newProj) throws SQLException {
+        Connection connection = DriverManager.getConnection(
+                "jdbc:mysql://localhost:3306/PoisePMS?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
+                "tish", "MySQL@Gemini074");
+        String completionDate = "NULL";
+        if (newProj.completionDate != null) {
+            completionDate = "'" + sqlDateFormat.format(newProj.completionDate) + "'";
+
+        }
+        String projSQLquery = "INSERT INTO Project VALUES (" + newProj.projNum + ", '" + newProj.projName + "','"
+                + newProj.buildingType + "', '" + newProj.address + "', '" + newProj.erfNum + "', " + newProj.totalFee
+                + ", " + newProj.amountPaid + ",'" + sqlDateFormat.format(newProj.deadline) + "'," + newProj.isFinalised
+                + ", " + completionDate + ", " + newProj.archPersonID + ", " + newProj.custPersonID + ", "
+                + newProj.structEngPersonID + ", " + newProj.projMangPersonID + ")";
+        Statement statement = connection.createStatement();
+        statement.executeUpdate(projSQLquery);
+        connection.close();
     }
 
     /**
+     * Method to get a new project
+     * 
      * @param projNum
      * @return Project
-     * @throws Exception // Method to get all the projects in the ArrayList
-     *                   ProjectList.
+     * @throws Exception
      */
 
     public Project get(int projNum) throws Exception {
-        for (Project proj : ProjectList) {
-            if (proj.projNum == projNum) {
-                return proj;
+        Connection connection = DriverManager.getConnection(
+                "jdbc:mysql://localhost:3306/PoisePMS?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
+                "tish", "MySQL@Gemini074");
+
+        String SQLquery = "SELECT projNum, projName, buildingType, address, erfNum, totalFee, amountPaid, deadline, isFinalised, "
+                + "completionDate, archPersonID, custPersonID, structEngPersonID, projMangPersonID  FROM Project WHERE projNum="
+                + projNum;
+        Statement statement = connection.createStatement();
+        ResultSet results = statement.executeQuery(SQLquery);
+
+        while (results.next()) {
+            int archPersonID = results.getInt("archPersonID");
+            Person archPerson = personRepo.getPerson(archPersonID);
+            int custPersonID = results.getInt("custPersonID");
+            Person custPerson = personRepo.getPerson(custPersonID);
+            int structEngPersonID = results.getInt("structEngPersonID");
+            Person structEngPerson = personRepo.getPerson(structEngPersonID);
+            int projMangPersonID = results.getInt("projMangPersonID");
+            Person projMangPerson = personRepo.getPerson(projMangPersonID);
+            String sdeadline = results.getString("deadline");
+            Date deadline = sqlDateFormat.parse(sdeadline);
+            String scompletion = results.getString("completionDate");
+            Date completionDate;
+            if (scompletion == null) {
+                completionDate = null;
+            } else {
+                completionDate = sqlDateFormat.parse(scompletion);
             }
+            Project proj = new Project(results.getInt("projNum"), results.getString("projName"),
+                    results.getString("buildingType"), results.getString("address"), results.getString("erfNum"),
+                    results.getInt("totalFee"), results.getInt("amountPaid"), deadline,
+                    results.getBoolean("isFinalised"), completionDate, structEngPerson, archPerson, custPerson,
+                    projMangPerson);
+
+            connection.close();
+            return proj;
         }
 
         throw new Exception("Project number " + projNum + " could not be found.");
     }
 
     /**
+     * Method to update the projects in the arrayList ProjectList
+     * 
      * @param projectToUpdate
-     * @throws Exception // Method to update the projects in the arrayList
-     *                   ProjectList
+     * @throws Exception
      */
 
     public void update(Project projectToUpdate) throws Exception {
@@ -92,6 +142,43 @@ class ProjectRepository implements Serializable {
         }
 
         throw new Exception("Project number " + projectToUpdate.projNum + " could not be found.");
+    }
+
+    /**
+     * Method to update the deadline for the project
+     * 
+     * @param projNum
+     * @param newDeadline
+     * @throws SQLException
+     */
+
+    public void updateDeadline(int projNum, Date newDeadline) throws SQLException {
+        Connection connection = DriverManager.getConnection(
+                "jdbc:mysql://localhost:3306/PoisePMS?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
+                "tish", "MySQL@Gemini074");
+
+        String SQLquery = "UPDATE Project SET deadline= '" + sqlDateFormat.format(newDeadline) + "' WHERE projnum="
+                + projNum;
+        Statement statement = connection.createStatement();
+        statement.executeUpdate(SQLquery);
+        connection.close();
+    }
+
+    /**
+     * Method to update the payment that the client has made on the database
+     * 
+     * @throws SQLException
+     */
+
+    public void updatePayment(int projNum, int amountPaid) throws SQLException {
+        Connection connection = DriverManager.getConnection(
+                "jdbc:mysql://localhost:3306/PoisePMS?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
+                "tish", "MySQL@Gemini074");
+
+        String SQLquery = "UPDATE Project SET amountPaid=" + amountPaid + " WHERE projnum=" + projNum;
+        Statement statement = connection.createStatement();
+        statement.executeUpdate(SQLquery);
+        connection.close();
     }
 
     /**
