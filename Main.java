@@ -2,7 +2,6 @@ import java.util.Scanner;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Optional;
-import java.io.FileWriter;
 import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -22,13 +21,13 @@ public class Main {
     static DateFormat dateformat = new SimpleDateFormat("dd/MM/yyyy");
 
     /**
-     * Create instance of Project repository
+     * Create instance of Project and Person repository
      */
     static ProjectRepository projRepo;
     static PersonRepo personRepo;
 
     /**
-     * Create instance of Project repository
+     * Create instance of Project Management class
      */
 
     static ProjectManagement projMang;
@@ -85,21 +84,30 @@ public class Main {
 
             // User can view list of uncompleted projects by entering '6'
             case 6:
-                ArrayList<Project> incomplete = projRepo.uncompletedProj();
-                for (Project proj : incomplete) {
-                    System.out.println(proj.toString() + "\n");
+                try {
+                    ArrayList<Project> incomplete = projRepo.uncompletedProj();
+                    for (Project proj : incomplete) {
+                        System.out.println(proj.toString() + "\n");
+                    }
+                } catch (Exception e) {
+                    System.out.println(e.getMessage());
                 }
                 break;
 
             // User can view list of overdue projects by entering '7'
             case 7:
-                ArrayList<Project> overdue = projRepo.overdueProj();
-                for (Project proj : overdue) {
-                    System.out.println(proj.toString() + "\n");
+                try {
+                    ArrayList<Project> overdue = projRepo.overdueProj();
+                    for (Project proj : overdue) {
+                        System.out.println(proj.toString() + "\n");
+                    }
+                } catch (Exception e) {
+                    System.out.println(e.getMessage());
                 }
+
                 break;
 
-            // User can exit program by entering '8'
+            // User can exit program by entering '0'
             case 0:
                 exitProgram();
                 break;
@@ -112,8 +120,10 @@ public class Main {
     }
 
     /**
+     * Method to get user input as a string
+     * 
      * @param message
-     * @return String // Method to get user input as a string
+     * @return String
      */
 
     public static String getUserString(String message) {
@@ -122,8 +132,10 @@ public class Main {
     }
 
     /**
+     * Method to get user input as an integer
+     * 
      * @param message
-     * @return int // Method to get user input as an integer
+     * @return int
      */
 
     public static int getUserInt(String message) {
@@ -227,20 +239,21 @@ public class Main {
     }
 
     /**
-     * @throws ParseException // Method to change the due date of the project, by
-     *                        requesting for user's input and changing the input in
-     *                        the appropriate format.
+     * Method to change the due date of the project, by requesting for user's input
+     * and changing the input in the appropriate format.
+     * 
+     * @throws ParseException
      */
 
     public static void newDeadline() throws ParseException {
         // Get the project number the user wishes to work on
         Project proj = getProject();
-        int projNum = proj.projNum;
 
         String snewDeadline = getUserString("Please enter the new deadline for the project (dd/MM/yyyy): ");
         try {
             Date newDeadline = dateformat.parse(snewDeadline);
-            projMang.changeDeadline(projNum, newDeadline);
+
+            projMang.changeDeadline(proj, newDeadline);
 
         } catch (ParseException ex) {
             System.out.println("Date is not valid. Please try again.");
@@ -264,7 +277,7 @@ public class Main {
         int newAmount = getUserInt("Add client's next payment: ");
 
         try {
-            projMang.updateAmountPaid(proj.projNum, newAmount);
+            projMang.updateAmountPaid(proj, newAmount);
 
         } catch (Exception e) {
             System.out.println(e.getMessage());
@@ -272,9 +285,7 @@ public class Main {
     }
 
     /**
-     * Method to update a client, architect or contractor's details. User selects
-     * the type of person he/she wishes to update and the program will prompt the
-     * user for the new details.
+     * Method to retrieve a person's details.
      */
 
     public static Person getPerson() {
@@ -299,6 +310,9 @@ public class Main {
 
     }
 
+    /**
+     * Method to update a person's details
+     */
     public static void updatePersonDetails() {
         // Get the project number the user wishes to work on
         Person person = getPerson();
@@ -322,7 +336,6 @@ public class Main {
      * message will display
      */
     public static void finalisation() {
-        // Get the project number the user wishes to work on
         Project proj = getProject();
 
         if (proj.isFinalised) {
@@ -335,19 +348,11 @@ public class Main {
             Date complete = dateformat.parse(scomplete);
 
             // If there is an outstanding amount on the project, an invoice will be
-            // generated. Project will be stored in it's own file
-            // If the project has been paid in full, the appropriate message will
+            // generated. If the project has been paid in full, the appropriate message will
             // display
-            Invoice invoice = proj.finalise(complete);
-            projRepo.update(proj);
+            Invoice invoice = projMang.finaliseProj(proj, complete);
             if (invoice != null) {
                 System.out.print(invoice.toString());
-
-                ArrayList<Project> completedList = new ArrayList<Project>();
-                completedList.add(proj);
-                FileWriter writer = new FileWriter("Completed project.txt");
-                writer.write(completedList + System.lineSeparator());
-                writer.close();
 
             } else {
                 System.out.print("Project complete and paid in full");
@@ -364,13 +369,14 @@ public class Main {
     }
 
     /**
-     * @throws ParseException // Method to exit program and save projects
+     * Method to exit program and save projects
+     * 
+     * @throws ParseException
      */
 
     public static void exitProgram() throws ParseException {
         String answer = getUserString("Are you sure you want to exit program (y/n)");
         if (answer.equals("y")) {
-            projRepo.writeToFile();
             System.exit(0);
         } else {
             menuSelection();
@@ -378,10 +384,11 @@ public class Main {
     }
 
     /**
+     * Main Method - User has the choice to either use the example project in
+     * program or to generate a new project to navigate through the program.
+     * 
      * @param args
-     * @throws ParseException Main Method - User has the choice to either use the
-     *                        example project in program or to generate a new
-     *                        project to navigate through the program.
+     * @throws ParseException
      */
     public static void main(String[] args) {
 
@@ -389,7 +396,6 @@ public class Main {
             projRepo = new ProjectRepository();
             projMang = new ProjectManagement();
             personRepo = new PersonRepo();
-            projRepo.readFromFile();
             menuSelection();
 
         } catch (Exception ex) {

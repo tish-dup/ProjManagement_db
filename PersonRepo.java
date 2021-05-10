@@ -3,7 +3,11 @@ import java.util.ArrayList;
 
 public class PersonRepo {
 
-    // Constructor
+    /**
+     * Constructor
+     * 
+     * @throws Exception
+     */
     public PersonRepo() throws Exception {
 
         Class.forName("com.mysql.jdbc.Driver");
@@ -11,6 +15,12 @@ public class PersonRepo {
         // (this PC)
     }
 
+    /**
+     * Create a new person in the Person table
+     * 
+     * @param newPerson
+     * @throws SQLException
+     */
     public void createPerson(Person newPerson) throws SQLException {
         String personSQLquery = "INSERT INTO Person VALUES (" + newPerson.id + ", '" + newPerson.name + "','"
                 + newPerson.telNum + "', '" + newPerson.email + "', '" + newPerson.address + "')";
@@ -22,6 +32,13 @@ public class PersonRepo {
         connection.close();
     }
 
+    /**
+     * Retrieve a person from the Person table
+     * 
+     * @param id
+     * @return
+     * @throws Exception
+     */
     public Person getPerson(int id) throws Exception {
         Connection connection = DriverManager.getConnection(
                 "jdbc:mysql://localhost:3306/PoisePMS?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
@@ -39,6 +56,12 @@ public class PersonRepo {
         throw new Exception("Could not be found person with id" + id);
     }
 
+    /**
+     * Retrieve all data from the Person table
+     * 
+     * @return
+     * @throws SQLException
+     */
     public ArrayList<Person> getAll() throws SQLException {
         ArrayList<Person> allPerson = new ArrayList<Person>();
         Connection connection = DriverManager.getConnection(
@@ -57,6 +80,16 @@ public class PersonRepo {
         return allPerson;
     }
 
+    /**
+     * Update details of a person in the Person table
+     * 
+     * @param personID
+     * @param name
+     * @param telNum
+     * @param email
+     * @param address
+     * @throws SQLException
+     */
     public void updateDetails(int personID, String name, String telNum, String email, String address)
             throws SQLException {
         Connection connection = DriverManager.getConnection(

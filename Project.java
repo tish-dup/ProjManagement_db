@@ -8,6 +8,7 @@ class Project implements Serializable {
      *
      */
     private static final long serialVersionUID = 1L;
+
     /**
      * Atributes
      */
@@ -33,6 +34,7 @@ class Project implements Serializable {
     Person projMangPerson;
 
     /**
+     * Constructor
      * 
      * @param projNum
      * @param projName
@@ -134,8 +136,8 @@ class Project implements Serializable {
      *
      */
 
-    public void addAmount(int newAmmount) {
-        this.amountPaid = amountPaid + newAmmount;
+    public void addAmount(int newAmount) {
+        this.amountPaid = amountPaid + newAmount;
     }
 
     /**

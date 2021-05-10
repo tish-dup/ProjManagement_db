@@ -15,6 +15,7 @@ class Person implements Serializable {
     String address;
 
     /**
+     * Constructor
      * 
      * @param id
      * @param name
@@ -31,7 +32,9 @@ class Person implements Serializable {
     }
 
     /**
-     * @return String // Output for the class Person
+     * Output for the class Person
+     * 
+     * @return String
      */
 
     public String toString() {
@@ -44,15 +47,4 @@ class Person implements Serializable {
         return output;
     }
 
-    /**
-     * @param telNum
-     * @param email
-     * @param address The contact details for either the client, contractor or
-     *                architect for the project is updated
-     */
-    public void updateDetails(String telNum, String email, String address) {
-        this.telNum = telNum;
-        this.email = email;
-        this.address = address;
-    }
 }

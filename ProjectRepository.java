@@ -1,13 +1,7 @@
 import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.sql.*;
 
@@ -23,8 +17,14 @@ class ProjectRepository implements Serializable {
      */
     public ArrayList<Project> ProjectList = new ArrayList<Project>();
 
+    /**
+     * Create a instance of the Person respository
+     */
     PersonRepo personRepo;
 
+    /**
+     * Create an instance for a SQL date format
+     */
     DateFormat sqlDateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
     // Constructor
@@ -32,8 +32,6 @@ class ProjectRepository implements Serializable {
 
         Class.forName("com.mysql.jdbc.Driver");
         personRepo = new PersonRepo();
-        // Connect to the PoisePMS database, via the jdbc:mysql: channel on localhost
-        // (this PC)
 
     }
 
@@ -77,7 +75,7 @@ class ProjectRepository implements Serializable {
     }
 
     /**
-     * Method to get a new project
+     * Method to get a project
      * 
      * @param projNum
      * @return Project
@@ -85,13 +83,33 @@ class ProjectRepository implements Serializable {
      */
 
     public Project get(int projNum) throws Exception {
+        ArrayList<Project> results = getAll("WHERE projNum=" + projNum);
+        if (results.size() == 1) {
+            return results.get(0);
+        }
+
+        throw new Exception("Project number " + projNum + " could not be found.");
+    }
+
+    /**
+     * Method to get projects that are overdue or has been finalised
+     * 
+     * @param isFinalised
+     * @param isOverdue
+     * @return
+     * @throws Exception
+     */
+    public ArrayList<Project> getAll(String whereSQL) throws Exception {
+        ArrayList<Project> allProject = new ArrayList<Project>();
         Connection connection = DriverManager.getConnection(
                 "jdbc:mysql://localhost:3306/PoisePMS?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
                 "tish", "MySQL@Gemini074");
-
         String SQLquery = "SELECT projNum, projName, buildingType, address, erfNum, totalFee, amountPaid, deadline, isFinalised, "
-                + "completionDate, archPersonID, custPersonID, structEngPersonID, projMangPersonID  FROM Project WHERE projNum="
-                + projNum;
+                + "completionDate, archPersonID, custPersonID, structEngPersonID, projMangPersonID  FROM Project ";
+
+        if (whereSQL != null && whereSQL != "") {
+            SQLquery += whereSQL;
+        }
         Statement statement = connection.createStatement();
         ResultSet results = statement.executeQuery(SQLquery);
 
@@ -118,12 +136,11 @@ class ProjectRepository implements Serializable {
                     results.getInt("totalFee"), results.getInt("amountPaid"), deadline,
                     results.getBoolean("isFinalised"), completionDate, structEngPerson, archPerson, custPerson,
                     projMangPerson);
-
-            connection.close();
-            return proj;
+            allProject.add(proj);
         }
 
-        throw new Exception("Project number " + projNum + " could not be found.");
+        connection.close();
+        return allProject;
     }
 
     /**
@@ -134,110 +151,40 @@ class ProjectRepository implements Serializable {
      */
 
     public void update(Project projectToUpdate) throws Exception {
-        for (Project listproj : ProjectList) {
-            if (projectToUpdate.projNum == listproj.projNum) {
-                listproj = projectToUpdate;
-                return;
-            }
-        }
 
-        throw new Exception("Project number " + projectToUpdate.projNum + " could not be found.");
-    }
-
-    /**
-     * Method to update the deadline for the project
-     * 
-     * @param projNum
-     * @param newDeadline
-     * @throws SQLException
-     */
-
-    public void updateDeadline(int projNum, Date newDeadline) throws SQLException {
         Connection connection = DriverManager.getConnection(
                 "jdbc:mysql://localhost:3306/PoisePMS?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
                 "tish", "MySQL@Gemini074");
 
-        String SQLquery = "UPDATE Project SET deadline= '" + sqlDateFormat.format(newDeadline) + "' WHERE projnum="
-                + projNum;
+        String SQLquery = "UPDATE Project SET projName='" + projectToUpdate.projName + "', buildingType='"
+                + projectToUpdate.buildingType + "', address='" + projectToUpdate.address + "', erfNum='"
+                + projectToUpdate.erfNum + "', totalFee=" + projectToUpdate.totalFee + ",amountPaid="
+                + projectToUpdate.amountPaid + ", deadline='" + sqlDateFormat.format(projectToUpdate.deadline)
+                + "', isFinalised=" + projectToUpdate.isFinalised + ", completionDate='"
+                + sqlDateFormat.format(projectToUpdate.completionDate) + "',structEngPersonID="
+                + projectToUpdate.structEngPersonID + ", archPersonID=" + projectToUpdate.archPersonID
+                + ", custPersonID=" + projectToUpdate.custPersonID + ", projMangPersonID="
+                + projectToUpdate.projMangPersonID + " WHERE projnum=" + projectToUpdate.projNum;
         Statement statement = connection.createStatement();
         statement.executeUpdate(SQLquery);
         connection.close();
-    }
-
-    /**
-     * Method to update the payment that the client has made on the database
-     * 
-     * @throws SQLException
-     */
-
-    public void updatePayment(int projNum, int amountPaid) throws SQLException {
-        Connection connection = DriverManager.getConnection(
-                "jdbc:mysql://localhost:3306/PoisePMS?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
-                "tish", "MySQL@Gemini074");
-
-        String SQLquery = "UPDATE Project SET amountPaid=" + amountPaid + " WHERE projnum=" + projNum;
-        Statement statement = connection.createStatement();
-        statement.executeUpdate(SQLquery);
-        connection.close();
-    }
-
-    /**
-     * Method to write the projects to a binary file when the program is ended
-     */
-    public void writeToFile() {
-        try {
-            FileOutputStream outputFile = new FileOutputStream("Projectfile.tmp");
-            ObjectOutputStream oos = new ObjectOutputStream(outputFile);
-            oos.writeObject(ProjectList);
-            oos.close();
-
-        } catch (IOException e) {
-            System.out.println("Cannot load projects to file.");
-        }
-    }
-
-    /**
-     * Mehod to read the projects saved in a binary file
-     */
-    public void readFromFile() {
-
-        try {
-            FileInputStream inputFile = new FileInputStream("Projectfile.tmp");
-            ObjectInputStream ois = new ObjectInputStream(inputFile);
-            ProjectList = (ArrayList<Project>) ois.readObject();
-            ois.close();
-        } catch (Exception e) {
-            System.out.println("File cannot be found");
-            // System.out.println("File cannot be found");
-        }
     }
 
     /**
      * @return ArrayList<Project> Method to print uncompleted projects
+     * @throws Exception
      */
-    public ArrayList<Project> uncompletedProj() {
-        ArrayList<Project> uncompletedList = new ArrayList<Project>();
-        for (Project proj : ProjectList) {
-            if (!proj.isFinalised) {
-                uncompletedList.add(proj);
-            }
-        }
-        return uncompletedList;
+    public ArrayList<Project> uncompletedProj() throws Exception {
+        return getAll("WHERE isFinalised=0 ");
     }
 
     /**
      * @return ArrayList<Project> Method to create a list of projects that are
      *         overdue
+     * @throws Exception
      */
-    public ArrayList<Project> overdueProj() {
-        java.util.Date date = new java.util.Date();
-        ArrayList<Project> overdueList = new ArrayList<Project>();
-        for (Project proj : ProjectList) {
-            if (date.compareTo(proj.deadline) > 0) {
-                overdueList.add(proj);
-            }
-        }
-        return overdueList;
+    public ArrayList<Project> overdueProj() throws Exception {
+        return getAll("WHERE date(deadline)< date '" + sqlDateFormat.format(new Date()) + "'");
     }
 
 }

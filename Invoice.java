@@ -12,6 +12,7 @@ public class Invoice {
     Date completionDate;
 
     /**
+     * Constructor
      * 
      * @param projNum
      * @param projName
@@ -28,7 +29,9 @@ public class Invoice {
     }
 
     /**
-     * @return String // Output for the class Invoice
+     * Output for the class Invoice
+     * 
+     * @return String
      */
     public String toString() {
         String output = "Invoice";
@@ -36,7 +39,7 @@ public class Invoice {
         output += "\nProject Number: " + projNum;
         output += "\nProject Name: " + projName;
         output += "\nAmount due: R" + amountOut;
-        output += "\nDate of completion: " + new SimpleDateFormat("dd/mm/yyy").format(completionDate) + "\n";
+        output += "\nDate of completion: " + new SimpleDateFormat("dd/MM/yyy").format(completionDate) + "\n";
 
         return output;
     }
